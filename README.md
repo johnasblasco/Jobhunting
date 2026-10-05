@@ -67,8 +67,11 @@ When running locally you can use `config.json`. Every setting can also be set wi
 Keywords match whole words, so `react` matches "React Developer" but not "Reactor Operator".
 Use job titles you'd actually search for, like `customer service`, `virtual assistant`, `accountant` or `data analyst`.
 
-**About the free JSearch quota:** JSearch makes one request per keyword (up to 5 keywords) on every check.
-The free plan has a monthly request limit, so if you use many keywords, raise `pollMinutes` to 30–60.
+**About the free JSearch quota:** each JSearch check uses one request per keyword (up to 5 keywords).
+The free plan has a small monthly limit, so JSearch is checked every 6 hours by default, while the other sources
+are checked every 15 minutes. Monthly use = `(1440 / interval) × keywords × 30`. With 3 keywords and the
+default 360-minute interval that's 360 requests a month. Check your plan's limit on RapidAPI and set
+`JSEARCH_INTERVAL_MINUTES` to match.
 
 ## Deploy on Netlify (free, runs 24/7 without your computer)
 
@@ -89,6 +92,7 @@ The free plan has a monthly request limit, so if you use many keywords, raise `p
    | `EXCLUDE` | `senior, manager` | Optional |
    | `INCLUDE_REMOTE` | `false` to hide remote jobs | Optional |
    | `DISABLED_SOURCES` | `arbeitnow, jobicy` | Optional |
+   | `JSEARCH_INTERVAL_MINUTES` | `360` (default, 4 checks a day) | Optional, see the quota note above |
 
 4. Click **Deploy**. Then open your site, enter your password, and wait for the first check.
    It runs every 15 minutes. You can also click **↻ Check now**.

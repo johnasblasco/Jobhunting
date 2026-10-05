@@ -121,6 +121,17 @@ test('poller: respects a source minIntervalMinutes', async () => {
   assert.equal(calls, 1);
 });
 
+test('poller: config.intervals overrides a source interval', async () => {
+  let calls = 0;
+  const p = new Poller({
+    store: fileStore(tmpFile()), config: cfg({ intervals: { fast: 60 } }), env: {}, log: quiet,
+    sources: [{ name: 'fast', fetch: async () => { calls++; return []; } }],
+  });
+  await p.poll();
+  await p.poll();
+  assert.equal(calls, 1);
+});
+
 test('server: lists jobs, updates status, serves UI', async () => {
   const p = new Poller({ store: fileStore(tmpFile()), config: cfg(), env: {}, log: quiet, sources: [{ name: 's', fetch: async () => [job()] }] });
   const server = createServer(p).listen(0);
@@ -154,6 +165,8 @@ test('config: environment variables override the file (for Netlify)', () => {
   assert.equal(c.keepDays, 7);
   assert.equal(c.sources.remotive, false);
   assert.equal(c.sources.jobicy, false);
+  assert.equal(resolveConfig({}, {}).intervals.jsearch, 360);
+  assert.equal(resolveConfig({}, { JSEARCH_INTERVAL_MINUTES: '120' }).intervals.jsearch, 120);
   assert.deepEqual(resolveConfig({}, {}).keywords, ['developer', 'software engineer', 'web developer']);
 });
 

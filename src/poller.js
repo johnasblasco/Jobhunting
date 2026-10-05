@@ -38,7 +38,8 @@ export class Poller {
     const firstRun = this.store.jobs.size === 0;
     const due = this.enabledSources().filter((s) => {
       const last = this.status[s.name]?.lastRun;
-      return !s.minIntervalMinutes || !last || now - new Date(last) >= s.minIntervalMinutes * 60000;
+      const interval = this.config.intervals?.[s.name] ?? s.minIntervalMinutes;
+      return !interval || !last || now - new Date(last) >= interval * 60000;
     });
 
     const results = await Promise.allSettled(due.map((s) => s.fetch(this.config, this.env)));

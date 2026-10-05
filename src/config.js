@@ -13,12 +13,20 @@ export const DEFAULTS = {
   pollMinutes: 15,
   keepDays: 30,
   sources: { arbeitnow: false },
+  // Minimum minutes between checks of a source. JSearch's free plan has a small monthly
+  // quota (each check = 1 request per keyword), so by default it's checked every 6 hours.
+  intervals: { jsearch: 360 },
 };
 
 const list = (s) => String(s).split(',').map((x) => x.trim()).filter(Boolean);
 
 export function resolveConfig(fileConfig = {}, env = {}) {
-  const cfg = { ...DEFAULTS, ...fileConfig, sources: { ...DEFAULTS.sources, ...fileConfig.sources } };
+  const cfg = {
+    ...DEFAULTS,
+    ...fileConfig,
+    sources: { ...DEFAULTS.sources, ...fileConfig.sources },
+    intervals: { ...DEFAULTS.intervals, ...fileConfig.intervals },
+  };
   if (env.KEYWORDS) cfg.keywords = list(env.KEYWORDS);
   if (env.EXCLUDE !== undefined) cfg.exclude = list(env.EXCLUDE);
   if (env.LOCATION !== undefined) cfg.location = env.LOCATION.trim();
@@ -27,6 +35,8 @@ export function resolveConfig(fileConfig = {}, env = {}) {
   if (env.REMOTE_REGIONS !== undefined) cfg.remoteRegions = list(env.REMOTE_REGIONS);
   if (env.POLL_MINUTES) cfg.pollMinutes = Number(env.POLL_MINUTES) || cfg.pollMinutes;
   if (env.KEEP_DAYS) cfg.keepDays = Number(env.KEEP_DAYS) || cfg.keepDays;
+  if (env.JSEARCH_INTERVAL_MINUTES) cfg.intervals.jsearch = Number(env.JSEARCH_INTERVAL_MINUTES) || cfg.intervals.jsearch;
+  if (env.JOOBLE_INTERVAL_MINUTES) cfg.intervals.jooble = Number(env.JOOBLE_INTERVAL_MINUTES) || cfg.intervals.jooble;
   if (env.DISABLED_SOURCES !== undefined) {
     for (const name of list(env.DISABLED_SOURCES)) cfg.sources[name] = false;
   }

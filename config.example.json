@@ -25,6 +25,7 @@
   ],
   "pollMinutes": 15,
   "keepDays": 30,
+  "intervals": { "jsearch": 360 },
   "sources": {
     "jsearch": true,
     "jooble": true,
