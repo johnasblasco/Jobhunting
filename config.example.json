@@ -1,0 +1,38 @@
+{
+  "keywords": [
+    "developer",
+    "software engineer",
+    "web developer",
+    "react",
+    "node"
+  ],
+  "exclude": [
+    "senior staff",
+    "principal"
+  ],
+  "location": "Philippines",
+  "country": "ph",
+  "includeRemote": true,
+  "remoteRegions": [
+    "worldwide",
+    "anywhere",
+    "global",
+    "remote",
+    "asia",
+    "apac",
+    "philippines",
+    "southeast asia"
+  ],
+  "pollMinutes": 15,
+  "keepDays": 30,
+  "sources": {
+    "jsearch": true,
+    "jooble": true,
+    "remotive": true,
+    "remoteok": true,
+    "arbeitnow": false,
+    "himalayas": true,
+    "jobicy": true,
+    "weworkremotely": true
+  }
+}

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JobRadar</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+</head>
+<body>
+  <header>
+    <div class="top">
+      <h1>📡 JobRadar</h1>
+      <div class="meta" id="meta">Loading…</div>
+      <button id="refresh" title="Check all sources now">↻ Check now</button>
+      <button id="notify" title="Get a desktop notification when new jobs appear">🔔 Alerts</button>
+    </div>
+    <div class="controls">
+      <input id="q" type="search" placeholder="Filter by title, company, location…" autocomplete="off">
+      <div class="tabs" id="tabs">
+        <button data-tab="inbox" class="active">Inbox</button>
+        <button data-tab="today">Last 24h</button>
+        <button data-tab="local">Local</button>
+        <button data-tab="remote">Remote</button>
+        <button data-tab="saved">Saved</button>
+        <button data-tab="applied">Applied</button>
+        <button data-tab="hidden">Hidden</button>
+      </div>
+    </div>
+  </header>
+  <main id="list"></main>
+  <footer id="sources"></footer>
+  <script src="app.js"></script>
+</body>
+</html>
