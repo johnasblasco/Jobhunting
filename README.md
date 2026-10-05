@@ -19,6 +19,7 @@ job a few minutes after it's posted and can apply early.
 | Source | What it covers | Key needed? |
 |---|---|---|
 | **JSearch** | Google for Jobs results: **LinkedIn, Indeed, JobStreet, Glassdoor**, company career pages. Best for Philippine jobs. | Free RapidAPI key |
+| **Google Jobs (SerpApi)** | The jobs box in Google search: LinkedIn, Indeed, JobStreet, company sites. Links go straight to the original post. | Free SerpApi key |
 | **Jooble** | Big aggregator with Philippine listings (incl. JobStreet etc.) | Free key |
 | Remotive, Remote OK, Himalayas, Jobicy, We Work Remotely | Remote jobs worldwide (only ones open to Asia/PH/worldwide are kept) | No |
 | Arbeitnow | Mostly Europe, off by default | No |
@@ -29,7 +30,9 @@ job a few minutes after it's posted and can apply early.
 
 **Get the two free keys.** Without them you only get remote jobs.
 1. **JSearch**: sign up at <https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch>, subscribe to the free *Basic* plan, then copy your `X-RapidAPI-Key`.
-2. **Jooble**: request a key at <https://jooble.org/api/about>. It's emailed to you.
+2. **SerpApi**: sign up at <https://serpapi.com/users/sign_up> (free plan), verify your email,
+   then copy your key from <https://serpapi.com/manage-api-key>.
+3. **Jooble**: request a key at <https://jooble.org/api/about>. It's emailed to you.
 
 ## Setup
 
@@ -73,6 +76,10 @@ are checked every 15 minutes. Monthly use = `(1440 / interval) × keywords × 30
 default 360-minute interval that's 360 requests a month. Check your plan's limit on RapidAPI and set
 `JSEARCH_INTERVAL_MINUTES` to match.
 
+SerpApi works the same way (one search per keyword per check) and is checked every 12 hours by default:
+3 keywords × 2 checks × 30 days = 180 searches a month. Compare that with your plan's monthly searches at
+<https://serpapi.com/dashboard> and adjust `SERPAPI_INTERVAL_MINUTES`.
+
 ## Deploy on Netlify (free, runs 24/7 without your computer)
 
 1. On Netlify: **Add new site → Import an existing project →** pick this GitHub repo.
@@ -87,12 +94,14 @@ default 360-minute interval that's 360 requests a month. Check your plan's limit
    | `LOCATION` | `Philippines` (or `Manila`, `Cebu`…) | Recommended |
    | `COUNTRY` | `ph` | Recommended |
    | `RAPIDAPI_KEY` | your JSearch key | Recommended, gives you LinkedIn/Indeed/JobStreet jobs |
+   | `SERPAPI_KEY` | your SerpApi key | Recommended, a second source of LinkedIn/Indeed/JobStreet jobs via Google |
    | `JOOBLE_API_KEY` | your Jooble key | Recommended |
    | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | from the Telegram steps below | Optional, for phone alerts |
    | `EXCLUDE` | `senior, manager` | Optional |
    | `INCLUDE_REMOTE` | `false` to hide remote jobs | Optional |
    | `DISABLED_SOURCES` | `arbeitnow, jobicy` | Optional |
    | `JSEARCH_INTERVAL_MINUTES` | `360` (default, 4 checks a day) | Optional, see the quota note above |
+   | `SERPAPI_INTERVAL_MINUTES` | `720` (default, 2 checks a day) | Optional, see the quota note above |
 
 4. Click **Deploy**. Then open your site, enter your password, and wait for the first check.
    It runs every 15 minutes. You can also click **↻ Check now**.

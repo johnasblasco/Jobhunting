@@ -15,7 +15,8 @@ export const DEFAULTS = {
   sources: { arbeitnow: false },
   // Minimum minutes between checks of a source. JSearch's free plan has a small monthly
   // quota (each check = 1 request per keyword), so by default it's checked every 6 hours.
-  intervals: { jsearch: 360 },
+  // SerpApi's free plan is smaller still, so it's checked twice a day.
+  intervals: { jsearch: 360, serpapi: 720 },
 };
 
 const list = (s) => String(s).split(',').map((x) => x.trim()).filter(Boolean);
@@ -36,6 +37,7 @@ export function resolveConfig(fileConfig = {}, env = {}) {
   if (env.POLL_MINUTES) cfg.pollMinutes = Number(env.POLL_MINUTES) || cfg.pollMinutes;
   if (env.KEEP_DAYS) cfg.keepDays = Number(env.KEEP_DAYS) || cfg.keepDays;
   if (env.JSEARCH_INTERVAL_MINUTES) cfg.intervals.jsearch = Number(env.JSEARCH_INTERVAL_MINUTES) || cfg.intervals.jsearch;
+  if (env.SERPAPI_INTERVAL_MINUTES) cfg.intervals.serpapi = Number(env.SERPAPI_INTERVAL_MINUTES) || cfg.intervals.serpapi;
   if (env.JOOBLE_INTERVAL_MINUTES) cfg.intervals.jooble = Number(env.JOOBLE_INTERVAL_MINUTES) || cfg.intervals.jooble;
   if (env.DISABLED_SOURCES !== undefined) {
     for (const name of list(env.DISABLED_SOURCES)) cfg.sources[name] = false;
