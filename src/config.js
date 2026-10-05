@@ -1,39 +1,36 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+// Settings come from config.json (local runs) and/or environment variables (Netlify).
+// Environment variables win, so on Netlify you never need to commit a config file.
 
-export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-
-const DEFAULTS = {
-  keywords: [],
+export const DEFAULTS = {
+  keywords: ['developer', 'software engineer', 'web developer'],
   exclude: [],
-  location: '',
-  country: '',
+  location: 'Philippines',
+  country: 'ph',
   includeRemote: true,
   // Remote jobs restricted to other regions (e.g. "USA only") are hidden unless their
   // location mentions one of these. Empty list = show every remote job.
   remoteRegions: ['worldwide', 'anywhere', 'global', 'remote', 'asia', 'apac', 'philippines', 'southeast asia'],
   pollMinutes: 15,
   keepDays: 30,
-  sources: {},
+  sources: { arbeitnow: false },
 };
 
-export function loadEnv() {
-  try {
-    process.loadEnvFile(path.join(ROOT, '.env'));
-  } catch {
-    // no .env file - fine
-  }
-  return process.env;
-}
+const list = (s) => String(s).split(',').map((x) => x.trim()).filter(Boolean);
 
-export function loadConfig() {
-  const file = fs.existsSync(path.join(ROOT, 'config.json'))
-    ? path.join(ROOT, 'config.json')
-    : path.join(ROOT, 'config.example.json');
-  const cfg = { ...DEFAULTS, ...JSON.parse(fs.readFileSync(file, 'utf8')) };
+export function resolveConfig(fileConfig = {}, env = {}) {
+  const cfg = { ...DEFAULTS, ...fileConfig, sources: { ...DEFAULTS.sources, ...fileConfig.sources } };
+  if (env.KEYWORDS) cfg.keywords = list(env.KEYWORDS);
+  if (env.EXCLUDE !== undefined) cfg.exclude = list(env.EXCLUDE);
+  if (env.LOCATION !== undefined) cfg.location = env.LOCATION.trim();
+  if (env.COUNTRY !== undefined) cfg.country = env.COUNTRY.trim().toLowerCase();
+  if (env.INCLUDE_REMOTE !== undefined) cfg.includeRemote = !/^(false|0|no)$/i.test(env.INCLUDE_REMOTE.trim());
+  if (env.REMOTE_REGIONS !== undefined) cfg.remoteRegions = list(env.REMOTE_REGIONS);
+  if (env.POLL_MINUTES) cfg.pollMinutes = Number(env.POLL_MINUTES) || cfg.pollMinutes;
+  if (env.KEEP_DAYS) cfg.keepDays = Number(env.KEEP_DAYS) || cfg.keepDays;
+  if (env.DISABLED_SOURCES !== undefined) {
+    for (const name of list(env.DISABLED_SOURCES)) cfg.sources[name] = false;
+  }
   cfg.keywords = cfg.keywords.map((k) => k.trim()).filter(Boolean);
   cfg.exclude = cfg.exclude.map((k) => k.trim()).filter(Boolean);
-  cfg.file = path.relative(ROOT, file);
   return cfg;
 }

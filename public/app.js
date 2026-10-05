@@ -6,6 +6,20 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
+// Optional password (APP_PASSWORD on the server) so strangers can't use your site.
+let locked = false;
+async function api(path, opts = {}) {
+  if (locked) throw new Error('password required');
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await fetch(path, { ...opts, headers: { ...opts.headers, 'x-app-password': store.get('password', '') } });
+    if (res.status !== 401) return res;
+    const pw = prompt(attempt ? 'Wrong password, try again:' : 'Enter your JobRadar password:');
+    if (pw === null) { locked = true; break; }
+    store.set('password', pw);
+  }
+  throw new Error('password required');
+}
+
 let jobs = [];
 let data = null;
 let tab = store.get('tab', 'inbox');
@@ -88,9 +102,12 @@ function render() {
 
 async function load() {
   try {
-    data = await (await fetch('api/jobs')).json();
-  } catch {
-    $('#meta').textContent = 'Cannot reach the JobRadar server. Is it running?';
+    const res = await api('/api/jobs');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    data = await res.json();
+  } catch (e) {
+    $('#meta').textContent = e.message === 'password required' ? 'Password required - reload the page to try again.'
+      : `Cannot reach the JobRadar server (${e.message}).`;
     return;
   }
   jobs = data.jobs;
@@ -112,7 +129,7 @@ function alertNew(arrived) {
 }
 
 async function setStatus(id, status) {
-  const res = await fetch(`api/jobs/${encodeURIComponent(id)}/status`, {
+  const res = await api(`/api/jobs/${encodeURIComponent(id)}/status`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }),
   });
   if (res.ok) {
@@ -140,7 +157,7 @@ $('#q').addEventListener('input', render);
 $('#refresh').addEventListener('click', async (e) => {
   e.target.disabled = true;
   e.target.textContent = '↻ Checking…';
-  try { await fetch('api/refresh', { method: 'POST' }); } finally {
+  try { await api('/api/refresh', { method: 'POST' }); } catch { /* shown on next load */ } finally {
     e.target.disabled = false;
     e.target.textContent = '↻ Check now';
     load();

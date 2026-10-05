@@ -1,0 +1,8 @@
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+  command = "npm test"
+
+# How often to check for new jobs (cron syntax, UTC). "*/15 * * * *" = every 15 minutes.
+[functions."poll"]
+  schedule = "*/15 * * * *"

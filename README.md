@@ -12,7 +12,7 @@ job a few minutes after it's posted and can apply early.
 - **Alerts**: desktop notifications while the page is open, and optional **Telegram alerts on your phone**
 - **Track your applications**: Save ★, mark Applied ✓, Hide ✕
 - Tabs: Inbox, Last 24h, Local, Remote, Saved, Applied
-- Works on phone screens and supports dark mode. No database or npm packages needed, only Node.js.
+- Works on phone screens and supports dark mode. Run it on your computer, or deploy it free on **Netlify** so it runs 24/7.
 
 ## Sources
 
@@ -37,6 +37,7 @@ You need [Node.js](https://nodejs.org) 20.12 or newer.
 
 ```bash
 git clone <this repo> && cd Jobhunting
+npm install
 cp .env.example .env              # paste your API keys here
 cp config.example.json config.json  # set your keywords and location
 npm start
@@ -45,6 +46,9 @@ npm start
 Then open **http://localhost:3000** and click **🔔 Alerts** to allow notifications.
 
 ## config.json
+
+When running locally you can use `config.json`. Every setting can also be set with an environment variable
+(`KEYWORDS`, `EXCLUDE`, `LOCATION`, `COUNTRY`, `INCLUDE_REMOTE`, `REMOTE_REGIONS`, `KEEP_DAYS`, `DISABLED_SOURCES`), and environment variables win.
 
 ```jsonc
 {
@@ -65,6 +69,34 @@ Use job titles you'd actually search for, like `customer service`, `virtual assi
 
 **About the free JSearch quota:** JSearch makes one request per keyword (up to 5 keywords) on every check.
 The free plan has a monthly request limit, so if you use many keywords, raise `pollMinutes` to 30–60.
+
+## Deploy on Netlify (free, runs 24/7 without your computer)
+
+1. On Netlify: **Add new site → Import an existing project →** pick this GitHub repo.
+2. Build settings: Netlify reads `netlify.toml`, so leave **Base directory**, **Build command**,
+   **Publish directory** and **Functions directory** as they are (or blank).
+3. **Environment variables → Add environment variables**: add these:
+
+   | Key | Example value | Needed? |
+   |---|---|---|
+   | `APP_PASSWORD` | any password you choose | **Yes**, otherwise anyone with the link can use up your API quota |
+   | `KEYWORDS` | `virtual assistant, customer service, web developer` | Yes (comma separated) |
+   | `LOCATION` | `Philippines` (or `Manila`, `Cebu`…) | Recommended |
+   | `COUNTRY` | `ph` | Recommended |
+   | `RAPIDAPI_KEY` | your JSearch key | Recommended, gives you LinkedIn/Indeed/JobStreet jobs |
+   | `JOOBLE_API_KEY` | your Jooble key | Recommended |
+   | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | from the Telegram steps below | Optional, for phone alerts |
+   | `EXCLUDE` | `senior, manager` | Optional |
+   | `INCLUDE_REMOTE` | `false` to hide remote jobs | Optional |
+   | `DISABLED_SOURCES` | `arbeitnow, jobicy` | Optional |
+
+4. Click **Deploy**. Then open your site, enter your password, and wait for the first check.
+   It runs every 15 minutes. You can also click **↻ Check now**.
+
+How it works on Netlify: the scheduled function `netlify/functions/poll.mjs` checks for jobs every 15 minutes,
+and `netlify/functions/api.mjs` serves the page's data. Jobs are stored in **Netlify Blobs**, which needs no setup.
+To change how often it checks, edit `schedule` in `netlify.toml`. After you change an environment variable,
+redeploy (**Deploys → Trigger deploy**) for it to take effect.
 
 ## Phone alerts with Telegram (recommended)
 

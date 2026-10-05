@@ -3,14 +3,15 @@ import { matches } from './filter.js';
 import { notifyTelegram } from './notify.js';
 
 export class Poller {
-  constructor({ store, config, env, sources = SOURCES, log = console }) {
+  constructor({ store, config, env, sources = SOURCES, log = console, state = {}, saveState = null }) {
     this.store = store;
     this.config = config;
     this.env = env;
     this.sources = sources;
     this.log = log;
-    this.status = {}; // per-source: { ok, count, error, lastRun, skipped }
-    this.lastPoll = null;
+    this.status = state.status || {}; // per-source: { ok, count, error, lastRun, skipped }
+    this.lastPoll = state.lastPoll || null;
+    this.saveState = saveState;
     this.running = null;
     this.timer = null;
   }
@@ -60,8 +61,9 @@ export class Poller {
     );
     const added = this.store.add(relevant, now);
     this.store.prune(this.config.keepDays, now);
-    this.store.save();
     this.lastPoll = now.toISOString();
+    await this.store.save();
+    await this.saveState?.({ status: this.status, lastPoll: this.lastPoll });
     this.log.log(`[poll] ${fetched.length} fetched, ${relevant.length} matched, ${added.length} new`);
 
     // Don't blast your phone with the whole backlog on the very first run.

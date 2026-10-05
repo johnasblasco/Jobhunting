@@ -1,6 +1,13 @@
 const UA = 'Mozilla/5.0 (compatible; JobRadar/1.0; personal job alerts)';
 
-async function request(url, { timeoutMs = 20000, headers = {}, ...opts } = {}) {
+let defaultTimeoutMs = 20000;
+
+/** Netlify functions have short time limits, so they lower this. */
+export function setRequestTimeout(ms) {
+  defaultTimeoutMs = ms;
+}
+
+async function request(url, { timeoutMs = defaultTimeoutMs, headers = {}, ...opts } = {}) {
   const res = await fetch(url, {
     ...opts,
     headers: { 'User-Agent': UA, Accept: '*/*', ...headers },

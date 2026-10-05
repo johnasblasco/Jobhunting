@@ -1,15 +1,13 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { dedupeKey } from './filter.js';
 
-/** Tiny JSON-file store. Remembers every job we've seen and your status for it. */
+/**
+ * Remembers every job we've seen and your status for it.
+ * `persist` decides where it's saved (a JSON file locally, Netlify Blobs online).
+ */
 export class Store {
-  constructor(file) {
-    this.file = file;
-    this.jobs = new Map();
-    if (fs.existsSync(file)) {
-      for (const job of JSON.parse(fs.readFileSync(file, 'utf8')).jobs || []) this.jobs.set(job.id, job);
-    }
+  constructor(jobs = [], persist = null) {
+    this.persist = persist;
+    this.jobs = new Map(jobs.map((j) => [j.id, j]));
   }
 
   /** Adds jobs not seen before. Returns the newly added ones. */
@@ -51,10 +49,7 @@ export class Store {
     return [...this.jobs.values()].sort((a, b) => time(b) - time(a));
   }
 
-  save() {
-    fs.mkdirSync(path.dirname(this.file), { recursive: true });
-    const tmp = `${this.file}.tmp`;
-    fs.writeFileSync(tmp, JSON.stringify({ jobs: [...this.jobs.values()] }));
-    fs.renameSync(tmp, this.file);
+  async save() {
+    await this.persist?.({ jobs: [...this.jobs.values()] });
   }
 }

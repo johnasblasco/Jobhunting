@@ -12,5 +12,8 @@
   "engines": {
     "node": ">=20.12"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@netlify/blobs": "^11.1.3"
+  }
 }

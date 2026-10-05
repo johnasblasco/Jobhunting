@@ -8,22 +8,22 @@ export default {
   envKey: 'RAPIDAPI_KEY',
   local: true,
   async fetch(config, env) {
-    const jobs = [];
-    // One request per keyword keeps the free quota usable; only today's posts.
-    for (const keyword of config.keywords.slice(0, 5)) {
-      const params = new URLSearchParams({
-        query: config.location ? `${keyword} in ${config.location}` : keyword,
-        page: '1',
-        num_pages: '1',
-        date_posted: 'today',
-      });
-      if (config.country) params.set('country', config.country);
-      const res = await fetchJson(`https://jsearch.p.rapidapi.com/search?${params}`, {
-        headers: { 'X-RapidAPI-Key': env.RAPIDAPI_KEY, 'X-RapidAPI-Host': 'jsearch.p.rapidapi.com' },
-      });
-      for (const j of res.data || []) jobs.push(map(j));
-    }
-    return jobs;
+    // One request per keyword (max 5) keeps the free quota usable; only today's posts.
+    const pages = await Promise.all(
+      config.keywords.slice(0, 5).map((keyword) => {
+        const params = new URLSearchParams({
+          query: config.location ? `${keyword} in ${config.location}` : keyword,
+          page: '1',
+          num_pages: '1',
+          date_posted: 'today',
+        });
+        if (config.country) params.set('country', config.country);
+        return fetchJson(`https://jsearch.p.rapidapi.com/search?${params}`, {
+          headers: { 'X-RapidAPI-Key': env.RAPIDAPI_KEY, 'X-RapidAPI-Host': 'jsearch.p.rapidapi.com' },
+        });
+      }),
+    );
+    return pages.flatMap((res) => (res.data || []).map(map));
   },
 };
 
