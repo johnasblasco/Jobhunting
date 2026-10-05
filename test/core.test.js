@@ -219,3 +219,24 @@ test('server: APP_PASSWORD protects the API', async () => {
     server.close();
   }
 });
+
+test('errors explain what the service said, and failed sources retry within the hour', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => Response.json({ message: 'You are not subscribed to this API.' }, { status: 403 }));
+  const { fetchJson } = await import('../src/util.js');
+  await assert.rejects(fetchJson('https://jsearch.p.rapidapi.com/search'), (e) => {
+    assert.match(e.message, /HTTP 403 from jsearch\.p\.rapidapi\.com/);
+    assert.match(e.message, /not subscribed to the free plan/);
+    assert.match(e.message, /"You are not subscribed to this API\."/);
+    return true;
+  });
+
+  let calls = 0;
+  const p = new Poller({
+    store: fileStore(tmpFile()), config: cfg({ intervals: { q: 360 } }), env: {}, log: quiet,
+    sources: [{ name: 'q', fetch: async () => { calls++; throw new Error('HTTP 500'); } }],
+  });
+  await p.poll();
+  p.status.q.lastRun = new Date(Date.now() - 61 * 60000).toISOString();
+  await p.poll();
+  assert.equal(calls, 2, 'retried after an hour, not 6 hours');
+});

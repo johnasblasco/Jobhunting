@@ -37,9 +37,11 @@ export class Poller {
     const now = new Date();
     const firstRun = this.store.jobs.size === 0;
     const due = this.enabledSources().filter((s) => {
-      const last = this.status[s.name]?.lastRun;
-      const interval = this.config.intervals?.[s.name] ?? s.minIntervalMinutes;
-      return !interval || !last || now - new Date(last) >= interval * 60000;
+      const st = this.status[s.name];
+      let interval = this.config.intervals?.[s.name] ?? s.minIntervalMinutes;
+      // A source that failed is retried within the hour instead of waiting its full interval.
+      if (st && st.ok === false) interval = Math.min(interval || 0, 60);
+      return !interval || !st?.lastRun || now - new Date(st.lastRun) >= interval * 60000;
     });
 
     const results = await Promise.allSettled(due.map((s) => s.fetch(this.config, this.env)));

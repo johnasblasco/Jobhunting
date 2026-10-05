@@ -7,13 +7,38 @@ export function setRequestTimeout(ms) {
   defaultTimeoutMs = ms;
 }
 
+const HINTS = {
+  401: 'API key is wrong',
+  403: 'API key is wrong, or you are not subscribed to the free plan',
+  429: 'free quota used up or too many requests - try again later or check fewer times',
+};
+
 async function request(url, { timeoutMs = defaultTimeoutMs, headers = {}, ...opts } = {}) {
-  const res = await fetch(url, {
-    ...opts,
-    headers: { 'User-Agent': UA, Accept: '*/*', ...headers },
-    signal: AbortSignal.timeout(timeoutMs),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status} from ${new URL(url).host}`);
+  const host = new URL(url).host;
+  let res;
+  try {
+    res = await fetch(url, {
+      ...opts,
+      headers: { 'User-Agent': UA, Accept: '*/*', ...headers },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch (e) {
+    if (e.name === 'TimeoutError') throw new Error(`${host} took longer than ${timeoutMs / 1000}s to answer`);
+    throw e;
+  }
+  if (!res.ok) {
+    // Show what the service said, e.g. "You are not subscribed to this API."
+    const body = await res.text().catch(() => '');
+    let said = body;
+    try {
+      const j = JSON.parse(body);
+      said = j.message || j.error || j.detail || body;
+    } catch {
+      // not JSON
+    }
+    said = stripHtml(String(said), 160);
+    throw new Error([`HTTP ${res.status} from ${host}`, HINTS[res.status], said && `"${said}"`].filter(Boolean).join(': '));
+  }
   return res;
 }
 
