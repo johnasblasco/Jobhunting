@@ -43,6 +43,11 @@ export class Store {
     }
   }
 
+  /** Forget jobs that no longer pass `keep` (e.g. after changing your location). */
+  retain(keep) {
+    for (const [id, job] of this.jobs) if (!keep(job)) this.jobs.delete(id);
+  }
+
   /** Newest first: by posting date, falling back to when we first saw it. */
   list() {
     const time = (j) => new Date(j.postedAt || j.firstSeenAt).getTime();

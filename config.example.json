@@ -12,20 +12,23 @@
   ],
   "location": "Philippines",
   "country": "ph",
+  "onlyCountry": true,
   "includeRemote": true,
   "remoteRegions": [
     "worldwide",
     "anywhere",
+    "anywhere in the world",
     "global",
-    "remote",
     "asia",
     "apac",
-    "philippines",
     "southeast asia"
   ],
   "pollMinutes": 15,
   "keepDays": 30,
-  "intervals": { "jsearch": 360, "serpapi": 720 },
+  "intervals": {
+    "jsearch": 360,
+    "serpapi": 720
+  },
   "sources": {
     "jsearch": true,
     "serpapi": true,

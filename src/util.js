@@ -88,5 +88,10 @@ export function parseRss(xml) {
 }
 
 export function normalizeKey(s = '') {
-  return String(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  return String(s)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Parañaque -> paranaque
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 }

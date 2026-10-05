@@ -59,8 +59,9 @@ When running locally you can use `config.json`. Every setting can also be set wi
   "exclude": ["senior staff", "principal"],             // skip titles containing these
   "location": "Philippines",       // used for JSearch/Jooble searches
   "country": "ph",                 // JSearch country code
+  "onlyCountry": true,             // drop jobs outside your country (Makati, Cebu... count as PH)
   "includeRemote": true,           // include remote jobs
-  "remoteRegions": ["worldwide", "anywhere", "asia", "apac", "philippines"], // hide "USA only" etc.
+  "remoteRegions": ["worldwide", "anywhere", "asia", "apac"], // remote jobs must be open to one of these
   "pollMinutes": 15,               // how often to check
   "keepDays": 30,                  // forget jobs older than this (unless saved/applied)
   "sources": { "arbeitnow": false } // turn sources on/off
@@ -99,6 +100,7 @@ SerpApi works the same way (one search per keyword per check) and is checked eve
    | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | from the Telegram steps below | Optional, for phone alerts |
    | `EXCLUDE` | `senior, manager` | Optional |
    | `INCLUDE_REMOTE` | `false` to hide remote jobs | Optional |
+   | `ONLY_COUNTRY` | `true` (default): only jobs located in your country, plus remote jobs open to Asia or worldwide | Optional |
    | `DISABLED_SOURCES` | `arbeitnow, jobicy` | Optional |
    | `JSEARCH_INTERVAL_MINUTES` | `360` (default, 4 checks a day) | Optional, see the quota note above |
    | `SERPAPI_INTERVAL_MINUTES` | `720` (default, 2 checks a day) | Optional, see the quota note above |

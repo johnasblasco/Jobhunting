@@ -1,5 +1,5 @@
 import { SOURCES } from './sources/index.js';
-import { matches } from './filter.js';
+import { matches, stillWanted } from './filter.js';
 import { notifyTelegram } from './notify.js';
 
 export class Poller {
@@ -62,6 +62,7 @@ export class Poller {
     );
     const added = this.store.add(relevant, now);
     this.store.prune(this.config.keepDays, now);
+    this.store.retain((j) => stillWanted(j, this.config));
     this.lastPoll = now.toISOString();
     await this.store.save();
     await this.saveState?.({ status: this.status, lastPoll: this.lastPoll });

@@ -9,6 +9,7 @@ import { resolveConfig } from '../src/config.js';
 import { Poller } from '../src/poller.js';
 import { createServer } from '../src/server.js';
 import { toIso } from '../src/util.js';
+import { handleApi } from '../src/api.js';
 
 const cfg = (over = {}) => ({
   keywords: ['developer', 'react'], exclude: ['senior'], location: 'Philippines', includeRemote: true,
@@ -28,17 +29,52 @@ test('filter: keyword must be in title or tags', () => {
   assert.ok(!matches(job({ title: 'Reactor Operator' }), cfg()), 'whole words only');
 });
 
-test('filter: exclude words and region-locked remote jobs', () => {
+test('filter: exclude words; remote jobs must be open to your region', () => {
   assert.ok(!matches(job({ title: 'Senior Developer' }), cfg()));
   assert.ok(!matches(job({ location: 'USA Only' }), cfg()));
   assert.ok(matches(job({ location: 'Asia, Europe' }), cfg()));
   assert.ok(matches(job({ location: 'Philippines' }), cfg()), 'configured location counts');
   assert.ok(!matches(job(), cfg({ includeRemote: false })));
-  assert.ok(matches(job({ location: 'USA Only' }), cfg({ remoteRegions: [], location: '' })));
+  assert.ok(matches(job({ location: 'USA Only' }), cfg({ onlyCountry: false, remoteRegions: [], location: '' })) === false, 'abroad is still abroad');
+  assert.ok(matches(job({ location: 'Remote' }), cfg({ onlyCountry: false })));
 });
 
-test('filter: local sources trust the server-side search', () => {
-  assert.ok(matches(job({ title: 'IT Staff', remote: false, location: 'Manila', local: true }), cfg()));
+test('filter: only Philippine jobs (the US jobs from the screenshot are dropped)', () => {
+  const ph = cfg({ country: 'ph', location: 'Philippines', onlyCountry: true, keywords: ['customer service'], exclude: [] });
+  const local = (location, extra = {}) => job({ local: true, remote: false, title: 'Customer Service Representative', location, ...extra });
+  // From the screenshot - all US:
+  assert.ok(!matches(local('Santa Fe Springs, CA, United States'), ph));
+  assert.ok(!matches(local('Jurupa Valley, CA, United States'), ph));
+  assert.ok(!matches(local('Palo Alto, CA, United States'), ph));
+  assert.ok(!matches(local('Laguna Hills, CA, United States'), ph), 'Filipino-looking city abroad');
+  assert.ok(!matches(local('Austin, TX', { country: 'US' }), ph), 'JSearch country code');
+  assert.ok(!matches(local(''), ph), 'unknown location');
+  // Philippine locations:
+  for (const loc of ['Makati, PH', 'Taguig, Metro Manila, Philippines', 'Cebu City', 'Parañaque', 'Quezon City', 'BGC, Taguig', 'Davao City', 'Philippines, Vietnam']) {
+    assert.ok(matches(local(loc), ph), loc);
+  }
+  assert.ok(matches(local('Makati', { country: 'PH' }), ph));
+  // Remote:
+  const job2 = (o) => job({ title: 'Customer Service Agent', ...o });
+  assert.ok(matches(job2({ location: 'Worldwide' }), ph));
+  assert.ok(matches(job2({ location: 'Asia, Europe' }), ph));
+  assert.ok(!matches(job2({ location: 'Remote' }), ph), 'plain "Remote" is usually US-only');
+  assert.ok(!matches(job2({ location: 'United States' }), ph));
+  assert.ok(!matches(local('Remote', { remote: true, country: 'US' }), ph));
+});
+
+test('poller + API: changing location removes jobs already saved from abroad', async () => {
+  const p = new Poller({ store: fileStore(tmpFile()), config: cfg({ country: '', location: '', onlyCountry: false }), env: {}, log: quiet,
+    sources: [{ name: 's', local: true, fetch: async () => [job({ id: 'us', title: 'Customer Service', location: 'Palo Alto, CA', remote: false }), job({ id: 'ph', title: 'Customer Service Rep', location: 'Makati', remote: false }), job({ id: 'kept', title: 'CSR', location: 'Austin, TX', remote: false })] }] });
+  await p.poll();
+  assert.equal(p.store.jobs.size, 3);
+  p.store.setStatus('kept', 'applied');
+  p.config = cfg({ country: 'ph', location: 'Philippines', onlyCountry: true });
+  const res = await handleApi(new Request('http://x/api/jobs'), { poller: p });
+  assert.deepEqual((await res.json()).jobs.map((j) => j.id).sort(), ['kept', 'ph'], 'hidden right away');
+  p.sources = [];
+  await p.poll();
+  assert.deepEqual([...p.store.jobs.keys()].sort(), ['kept', 'ph'], 'and deleted on next check (applied ones kept)');
 });
 
 test('toIso handles seconds, ms, ISO and "YYYY-MM-DD HH:MM:SS"', () => {

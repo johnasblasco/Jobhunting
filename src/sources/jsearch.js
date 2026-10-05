@@ -37,6 +37,7 @@ export function map(j) {
     company: j.employer_name,
     location: location || (j.job_is_remote ? 'Remote' : ''),
     remote: Boolean(j.job_is_remote),
+    country: j.job_country || '',
     url: j.job_apply_link || j.job_google_link,
     postedAt: toIso(j.job_posted_at_timestamp) || toIso(j.job_posted_at_datetime_utc),
     salary: formatSalary(j.job_min_salary, j.job_max_salary, j.job_salary_currency, j.job_salary_period?.toLowerCase()),

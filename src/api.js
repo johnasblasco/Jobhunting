@@ -1,5 +1,6 @@
 // The JSON API used by the web page. Shared by the local server and the Netlify function.
 import { timingSafeEqual } from 'node:crypto';
+import { stillWanted } from './filter.js';
 
 const STATUSES = new Set(['new', 'seen', 'saved', 'applied', 'hidden']);
 const json = (body, status = 200) => Response.json(body, { status });
@@ -30,11 +31,11 @@ export async function handleApi(request, { poller, password, setStatus }) {
   if (request.method === 'GET' && pathname === '/api/jobs') {
     const { config } = poller;
     return json({
-      jobs: poller.store.list(),
+      jobs: poller.store.list().filter((j) => stillWanted(j, config)),
       lastPoll: poller.lastPoll,
       polling: Boolean(poller.running),
       sources: poller.status,
-      config: { keywords: config.keywords, location: config.location, pollMinutes: config.pollMinutes },
+      config: { keywords: config.keywords, location: config.location || (config.country || '').toUpperCase(), pollMinutes: config.pollMinutes },
     });
   }
   if (request.method === 'POST' && pathname === '/api/refresh') {
