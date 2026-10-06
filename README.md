@@ -99,6 +99,7 @@ limit, set `JSEARCH_MONTHLY_LIMIT` / `SERPAPI_MONTHLY_LIMIT` (check SerpApi's at
    | `INCLUDE_REMOTE` | `false` to hide remote jobs | Optional |
    | `ONLY_COUNTRY` | `true` (default): only jobs located in your country, plus remote jobs open to Asia or worldwide | Optional |
    | `DISABLED_SOURCES` | `arbeitnow, jobicy` | Optional |
+   | `JSEARCH_ENDPOINT` | e.g. `/search-v2`. Only needed if JSearch renames its search endpoint and the app can't find it | Optional |
    | `JSEARCH_MONTHLY_LIMIT` | `200` (default, the free Basic plan) | Optional, see the quota note above |
    | `SERPAPI_MONTHLY_LIMIT` | `100` (default) - set to your plan's monthly searches | Optional |
 

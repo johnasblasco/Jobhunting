@@ -37,7 +37,9 @@ async function request(url, { timeoutMs = defaultTimeoutMs, headers = {}, ...opt
       // not JSON
     }
     said = stripHtml(String(said), 160);
-    throw new Error([`HTTP ${res.status} from ${host}`, HINTS[res.status], said && `"${said}"`].filter(Boolean).join(': '));
+    const err = new Error([`HTTP ${res.status} from ${host}`, HINTS[res.status], said && `"${said}"`].filter(Boolean).join(': '));
+    err.status = res.status;
+    throw err;
   }
   return res;
 }

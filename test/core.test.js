@@ -268,11 +268,46 @@ test('jsearch keeps results from keywords that worked', async (t) => {
   const { SOURCES } = await import('../src/sources/index.js');
   const jsearch = SOURCES.find((s) => s.name === 'jsearch');
   let n = 0;
-  t.mock.method(globalThis, 'fetch', async () => (n++ === 0
+  t.mock.method(globalThis, 'fetch', async () => (n++ === 1
     ? new Response('slow', { status: 504 })
     : Response.json({ data: [{ job_id: `j${n}`, job_title: 'CSR', employer_name: 'X', job_apply_link: 'https://x', job_country: 'PH' }] })));
-  const jobs = await jsearch.fetch({ keywords: ['a', 'b'], location: 'Philippines', country: 'ph' }, { RAPIDAPI_KEY: 'k' });
-  assert.equal(jobs.length, 1);
+  const jobs = await jsearch.fetch({ keywords: ['a', 'b', 'c'], location: 'Philippines', country: 'ph' }, { RAPIDAPI_KEY: 'k' });
+  assert.equal(jobs.length, 2);
   t.mock.method(globalThis, 'fetch', async () => new Response('x', { status: 429 }));
   await assert.rejects(jsearch.fetch({ keywords: ['a', 'b'] }, { RAPIDAPI_KEY: 'k' }), /HTTP 429/);
+});
+
+test('jsearch finds its renamed search endpoint (old /search answers 404)', async (t) => {
+  const { SOURCES } = await import('../src/sources/index.js');
+  const jsearch = SOURCES.find((s) => s.name === 'jsearch');
+  const notFound = () => Response.json({ message: "Endpoint '/x' does not exist" }, { status: 404 });
+  const job = { job_id: 'n1', job_title: 'Virtual Assistant', employer_name: 'X', job_apply_link: 'https://x', job_country: 'PH' };
+  const seen = [];
+  t.mock.method(globalThis, 'fetch', async (url) => {
+    const u = new URL(String(url));
+    seen.push(u.pathname);
+    return u.pathname === '/job-search' ? Response.json({ status: 'OK', data: { jobs: [job] } }) : notFound();
+  });
+  const cfg = { keywords: ['virtual assistant', 'csr'], location: 'Philippines', country: 'ph' };
+  const jobs = await jsearch.fetch(cfg, { RAPIDAPI_KEY: 'k' });
+  assert.equal(jobs.length, 2, 'both keywords used the endpoint that exists; data.jobs shape understood');
+  assert.deepEqual(seen.slice(0, 2), ['/search-v2', '/job-search']);
+  assert.ok(seen.slice(2).every((p) => p === '/job-search'));
+
+  seen.length = 0;
+  await jsearch.fetch(cfg, { RAPIDAPI_KEY: 'k' });
+  assert.equal(seen[0], '/job-search', 'remembers the working endpoint');
+
+  let url;
+  t.mock.method(globalThis, 'fetch', async (u) => { url = new URL(String(u)); return Response.json({ data: [] }); });
+  await jsearch.fetch({ ...cfg, keywords: ['va'] }, { RAPIDAPI_KEY: 'k', JSEARCH_ENDPOINT: '/custom' });
+  assert.equal(url.pathname, '/custom', 'JSEARCH_ENDPOINT override');
+  assert.equal(url.searchParams.get('query'), 'va in Philippines');
+  assert.equal(url.searchParams.get('date_posted'), 'today');
+  assert.equal(url.searchParams.get('num_pages'), '1');
+  assert.equal(url.searchParams.get('location'), 'Philippines');
+  assert.equal(url.searchParams.get('country'), 'ph');
+
+  t.mock.method(globalThis, 'fetch', async () => notFound());
+  await assert.rejects(jsearch.fetch(cfg, { RAPIDAPI_KEY: 'k', JSEARCH_ENDPOINT: '/nope' }), /JSEARCH_ENDPOINT/);
 });
