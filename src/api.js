@@ -39,7 +39,7 @@ export async function handleApi(request, { poller, password, setStatus }) {
     });
   }
   if (request.method === 'POST' && pathname === '/api/refresh') {
-    const added = await poller.poll();
+    const added = await poller.poll({ manual: true });
     return json({ added: added.length });
   }
   const m = pathname.match(/^\/api\/jobs\/(.+)\/status$/);

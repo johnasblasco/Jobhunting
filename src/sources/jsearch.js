@@ -7,9 +7,10 @@ export default {
   label: 'JSearch',
   envKey: 'RAPIDAPI_KEY',
   local: true,
+  quota: true, // monthly request limit - see monthlyLimits in config.js
   async fetch(config, env) {
     // One request per keyword (max 5) keeps the free quota usable; only today's posts.
-    const pages = await Promise.all(
+    const results = await Promise.allSettled(
       config.keywords.slice(0, 5).map((keyword) => {
         const params = new URLSearchParams({
           query: config.location ? `${keyword} in ${config.location}` : keyword,
@@ -23,6 +24,9 @@ export default {
         });
       }),
     );
+    // Keep whatever succeeded; only fail if every keyword failed.
+    const pages = results.filter((r) => r.status === 'fulfilled').map((r) => r.value);
+    if (!pages.length) throw results[0].reason;
     return pages.flatMap((res) => (res.data || []).map(map));
   },
 };

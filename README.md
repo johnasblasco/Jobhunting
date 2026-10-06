@@ -71,15 +71,12 @@ When running locally you can use `config.json`. Every setting can also be set wi
 Keywords match whole words, so `react` matches "React Developer" but not "Reactor Operator".
 Use job titles you'd actually search for, like `customer service`, `virtual assistant`, `accountant` or `data analyst`.
 
-**About the free JSearch quota:** each JSearch check uses one request per keyword (up to 5 keywords).
-The free plan has a small monthly limit, so JSearch is checked every 6 hours by default, while the other sources
-are checked every 15 minutes. Monthly use = `(1440 / interval) × keywords × 30`. With 3 keywords and the
-default 360-minute interval that's 360 requests a month. Check your plan's limit on RapidAPI and set
-`JSEARCH_INTERVAL_MINUTES` to match.
-
-SerpApi works the same way (one search per keyword per check) and is checked every 12 hours by default:
-3 keywords × 2 checks × 30 days = 180 searches a month. Compare that with your plan's monthly searches at
-<https://serpapi.com/dashboard> and adjust `SERPAPI_INTERVAL_MINUTES`.
+**About the free quotas:** JSearch and SerpApi have a monthly request limit, and each check uses one
+request per keyword (max 5). The app works out how often to check so the month fits your limit, with 10%
+spare. On JSearch's free plan (200 a month) with 3 keywords, that's every 12 hours; with 1 keyword, every 4 hours.
+The page shows this next to the source, e.g. `jsearch: 12 ✓ (every 12h)`. If your plan has a different
+limit, set `JSEARCH_MONTHLY_LIMIT` / `SERPAPI_MONTHLY_LIMIT` (check SerpApi's at <https://serpapi.com/dashboard>).
+**↻ Check now** skips these two sources. They're slow and limited, so they only run on the schedule.
 
 ## Deploy on Netlify (free, runs 24/7 without your computer)
 
@@ -102,8 +99,8 @@ SerpApi works the same way (one search per keyword per check) and is checked eve
    | `INCLUDE_REMOTE` | `false` to hide remote jobs | Optional |
    | `ONLY_COUNTRY` | `true` (default): only jobs located in your country, plus remote jobs open to Asia or worldwide | Optional |
    | `DISABLED_SOURCES` | `arbeitnow, jobicy` | Optional |
-   | `JSEARCH_INTERVAL_MINUTES` | `360` (default, 4 checks a day) | Optional, see the quota note above |
-   | `SERPAPI_INTERVAL_MINUTES` | `720` (default, 2 checks a day) | Optional, see the quota note above |
+   | `JSEARCH_MONTHLY_LIMIT` | `200` (default, the free Basic plan) | Optional, see the quota note above |
+   | `SERPAPI_MONTHLY_LIMIT` | `100` (default) - set to your plan's monthly searches | Optional |
 
 4. Click **Deploy**. Then open your site, enter your password, and wait for the first check.
    It runs every 15 minutes. You can also click **↻ Check now**.

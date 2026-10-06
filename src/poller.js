@@ -27,20 +27,37 @@ export class Poller {
     });
   }
 
-  /** Poll every source once. Concurrent calls share the same run. */
-  poll() {
-    this.running ??= this.#poll().finally(() => (this.running = null));
+  /**
+   * Minutes to wait between checks of a source. For sources with a monthly request
+   * limit (JSearch, SerpApi) this is stretched so the month's checks fit the limit.
+   */
+  intervalFor(s) {
+    let interval = this.config.intervals?.[s.name] ?? s.minIntervalMinutes ?? 0;
+    const limit = this.config.monthlyLimits?.[s.name];
+    if (s.quota && limit) {
+      const perCheck = Math.max(1, Math.min(this.config.keywords.length, 5));
+      // Keep 10% of the limit spare for retries.
+      interval = Math.max(interval, Math.ceil((30 * 1440 * perCheck) / (limit * 0.9)));
+    }
+    return interval;
+  }
+
+  /** Check every source once. Concurrent calls share the same run. `manual` = "Check now". */
+  poll({ manual = false } = {}) {
+    this.running ??= this.#poll({ manual }).finally(() => (this.running = null));
     return this.running;
   }
 
-  async #poll() {
+  async #poll({ manual }) {
     const now = new Date();
     const firstRun = this.store.jobs.size === 0;
     const due = this.enabledSources().filter((s) => {
+      // Limited sources are slow and use your monthly quota: leave them to the schedule.
+      if (manual && s.quota) return false;
       const st = this.status[s.name];
-      let interval = this.config.intervals?.[s.name] ?? s.minIntervalMinutes;
-      // A source that failed is retried within the hour instead of waiting its full interval.
-      if (st && st.ok === false) interval = Math.min(interval || 0, 60);
+      let interval = this.intervalFor(s);
+      // A source that failed is retried sooner than its full interval (limited ones: 3h, others: 1h).
+      if (st && st.ok === false) interval = Math.min(interval, s.quota ? 180 : 60);
       return !interval || !st?.lastRun || now - new Date(st.lastRun) >= interval * 60000;
     });
 
@@ -51,7 +68,7 @@ export class Poller {
       if (r.status === 'fulfilled') {
         const jobs = r.value.map((j) => ({ ...j, local: Boolean(src.local) }));
         fetched.push(...jobs);
-        this.status[src.name] = { ok: true, count: jobs.length, lastRun: now.toISOString() };
+        this.status[src.name] = { ok: true, count: jobs.length, lastRun: now.toISOString(), every: this.intervalFor(src) };
       } else {
         this.status[src.name] = { ok: false, error: r.reason?.message || String(r.reason), lastRun: now.toISOString() };
         this.log.warn(`[${src.name}] ${this.status[src.name].error}`);

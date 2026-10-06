@@ -97,7 +97,7 @@ function render() {
   const entries = Object.entries(data.sources);
   $('#sources').innerHTML = 'Sources: ' + entries.map(([name, s]) =>
     s.skipped ? `<span title="${esc(s.skipped)}">${esc(name)}: off</span>`
-      : s.ok ? `<span>${esc(name)}: ${s.count} ✓</span>`
+      : s.ok ? `<span>${esc(name)}: ${s.count} ✓${s.every >= 120 ? ` <i>(every ${Math.round(s.every / 60)}h)</i>` : ''}</span>`
       : `<span class="err">${esc(name)}: error ⚠</span>`).join('') +
     entries.filter(([, s]) => s.ok === false).map(([name, s]) =>
       `<div class="err-detail"><b>${esc(name)}:</b> ${esc(s.error)}${s.lastRun ? ` <i>(${ago(new Date(s.lastRun))})</i>` : ''}</div>`).join('');

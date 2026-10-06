@@ -7,6 +7,7 @@ export default {
   label: 'Google Jobs (SerpApi)',
   envKey: 'SERPAPI_KEY',
   local: true,
+  quota: true, // monthly request limit - see monthlyLimits in config.js
   async fetch(config, env, now = new Date()) {
     // One search per keyword (max 5), so this uses your monthly quota like JSearch does.
     const pages = await Promise.all(

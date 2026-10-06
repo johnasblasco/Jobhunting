@@ -122,7 +122,7 @@ test('poller: collects from sources, isolates failures, skips missing keys', asy
   const p = new Poller({ store: fileStore(tmpFile()), config: cfg({ sources: { off: false } }), env: {}, sources, log: quiet });
   const added = await p.poll();
   assert.deepEqual(added.map((j) => j.id), ['x:1']);
-  assert.deepEqual(p.status.good, { ok: true, count: 2, lastRun: p.status.good.lastRun });
+  assert.deepEqual(p.status.good, { ok: true, count: 2, lastRun: p.status.good.lastRun, every: 0 });
   assert.equal(p.status.broken.error, 'boom');
   assert.match(p.status.keyed.skipped, /SECRET/);
   assert.equal(p.status.off, undefined);
@@ -201,7 +201,8 @@ test('config: environment variables override the file (for Netlify)', () => {
   assert.equal(c.keepDays, 7);
   assert.equal(c.sources.remotive, false);
   assert.equal(c.sources.jobicy, false);
-  assert.equal(resolveConfig({}, {}).intervals.jsearch, 360);
+  assert.equal(resolveConfig({}, {}).monthlyLimits.jsearch, 200);
+  assert.equal(resolveConfig({}, { JSEARCH_MONTHLY_LIMIT: '500' }).monthlyLimits.jsearch, 500);
   assert.equal(resolveConfig({}, { JSEARCH_INTERVAL_MINUTES: '120' }).intervals.jsearch, 120);
   assert.deepEqual(resolveConfig({}, {}).keywords, ['developer', 'software engineer', 'web developer']);
 });
@@ -239,4 +240,39 @@ test('errors explain what the service said, and failed sources retry within the 
   p.status.q.lastRun = new Date(Date.now() - 61 * 60000).toISOString();
   await p.poll();
   assert.equal(calls, 2, 'retried after an hour, not 6 hours');
+});
+
+test('poller: monthly limit spaces out checks; "Check now" skips limited sources', async () => {
+  let calls = 0;
+  const limited = { name: 'jsearch', quota: true, fetch: async () => { calls++; return []; } };
+  const p = new Poller({
+    store: fileStore(tmpFile()), config: cfg({ keywords: ['a', 'b', 'c'], monthlyLimits: { jsearch: 200 } }),
+    env: {}, log: quiet, sources: [limited],
+  });
+  const every = p.intervalFor(limited);
+  assert.equal(every, 720, '3 keywords x 200/month -> every 12h');
+  assert.ok((30 * 1440 / every) * 3 <= 200, 'a month of checks fits the limit');
+  p.config.keywords = ['a'];
+  assert.equal(p.intervalFor(limited), 240, 'fewer keywords -> more often');
+  p.config.intervals = { jsearch: 600 };
+  assert.equal(p.intervalFor(limited), 600, 'a longer interval you set still wins');
+
+  await p.poll({ manual: true });
+  assert.equal(calls, 0, 'Check now leaves it to the schedule');
+  await p.poll();
+  assert.equal(calls, 1);
+  assert.equal(p.status.jsearch.every, 600);
+});
+
+test('jsearch keeps results from keywords that worked', async (t) => {
+  const { SOURCES } = await import('../src/sources/index.js');
+  const jsearch = SOURCES.find((s) => s.name === 'jsearch');
+  let n = 0;
+  t.mock.method(globalThis, 'fetch', async () => (n++ === 0
+    ? new Response('slow', { status: 504 })
+    : Response.json({ data: [{ job_id: `j${n}`, job_title: 'CSR', employer_name: 'X', job_apply_link: 'https://x', job_country: 'PH' }] })));
+  const jobs = await jsearch.fetch({ keywords: ['a', 'b'], location: 'Philippines', country: 'ph' }, { RAPIDAPI_KEY: 'k' });
+  assert.equal(jobs.length, 1);
+  t.mock.method(globalThis, 'fetch', async () => new Response('x', { status: 429 }));
+  await assert.rejects(jsearch.fetch({ keywords: ['a', 'b'] }, { RAPIDAPI_KEY: 'k' }), /HTTP 429/);
 });

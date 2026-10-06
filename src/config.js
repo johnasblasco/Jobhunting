@@ -15,10 +15,11 @@ export const DEFAULTS = {
   pollMinutes: 15,
   keepDays: 30,
   sources: { arbeitnow: false },
-  // Minimum minutes between checks of a source. JSearch's free plan has a small monthly
-  // quota (each check = 1 request per keyword), so by default it's checked every 6 hours.
-  // SerpApi's free plan is smaller still, so it's checked twice a day.
-  intervals: { jsearch: 360, serpapi: 720 },
+  // Minimum minutes between checks of a source.
+  intervals: {},
+  // Requests per month on your plan. Each check uses 1 request per keyword (max 5), and the
+  // app spaces checks out so the month fits. JSearch Basic (free) = 200.
+  monthlyLimits: { jsearch: 200, serpapi: 100 },
 };
 
 // Netlify lets you save a variable with an empty value; treat that as "not set".
@@ -31,6 +32,7 @@ export function resolveConfig(fileConfig = {}, env = {}) {
     ...fileConfig,
     sources: { ...DEFAULTS.sources, ...fileConfig.sources },
     intervals: { ...DEFAULTS.intervals, ...fileConfig.intervals },
+    monthlyLimits: { ...DEFAULTS.monthlyLimits, ...fileConfig.monthlyLimits },
   };
   if (env.KEYWORDS) cfg.keywords = list(env.KEYWORDS);
   if (set(env.EXCLUDE)) cfg.exclude = list(env.EXCLUDE);
@@ -42,6 +44,8 @@ export function resolveConfig(fileConfig = {}, env = {}) {
   if (env.POLL_MINUTES) cfg.pollMinutes = Number(env.POLL_MINUTES) || cfg.pollMinutes;
   if (env.KEEP_DAYS) cfg.keepDays = Number(env.KEEP_DAYS) || cfg.keepDays;
   if (env.JSEARCH_INTERVAL_MINUTES) cfg.intervals.jsearch = Number(env.JSEARCH_INTERVAL_MINUTES) || cfg.intervals.jsearch;
+  if (set(env.JSEARCH_MONTHLY_LIMIT)) cfg.monthlyLimits.jsearch = Number(env.JSEARCH_MONTHLY_LIMIT) || cfg.monthlyLimits.jsearch;
+  if (set(env.SERPAPI_MONTHLY_LIMIT)) cfg.monthlyLimits.serpapi = Number(env.SERPAPI_MONTHLY_LIMIT) || cfg.monthlyLimits.serpapi;
   if (env.SERPAPI_INTERVAL_MINUTES) cfg.intervals.serpapi = Number(env.SERPAPI_INTERVAL_MINUTES) || cfg.intervals.serpapi;
   if (env.JOOBLE_INTERVAL_MINUTES) cfg.intervals.jooble = Number(env.JOOBLE_INTERVAL_MINUTES) || cfg.intervals.jooble;
   if (set(env.DISABLED_SOURCES)) {
